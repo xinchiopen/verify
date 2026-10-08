@@ -1,0 +1,20 @@
+{
+  // 飞书转发代理（Feishu Relay Proxy）：GitHub Pages 镜像的浏览器经它把飞书请求原样转到 open.feishu.cn。
+  // 部署：pnpm worker:deploy（或 .github/workflows/worker.yml）；部署后地址
+  // https://verify-feishu-relay.<subdomain>.workers.dev 填入站点构建变量 VITE_FEISHU_API_BASE。
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "verify-feishu-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "upload_source_maps": false,
+  // 不记录任何请求日志：凭证与令牌只在传输中经过
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    // 逗号分隔；核验方自部署时改成自己站点的 Origin
+    "ALLOWED_ORIGINS": "https://xinchiopen.github.io"
+  }
+}

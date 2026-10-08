@@ -1,0 +1,75 @@
+name: Deploy to GitHub Pages
+
+# 线上站点 https://xinchiopen.github.io/verify/
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      # VITE_PUBLIC_PATH 写死为仓库名子路径；高德 key 与飞书转发代理地址来自仓库 Variables（可空）
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_PUBLIC_PATH: /verify/
+          VITE_AMAP_WEB_KEY: ${{ vars.VITE_AMAP_WEB_KEY }}
+          VITE_AMAP_SECURITY_JS_CODE: ${{ vars.VITE_AMAP_SECURITY_JS_CODE }}
+          VITE_FEISHU_API_BASE: ${{ vars.VITE_FEISHU_API_BASE }}
+
+      # Pages 没有 SPA 回退：把入口复制成 404.html 让深层链接刷新也能进站；.nojekyll 关闭 Jekyll 处理
+      - name: SPA fallback and disable Jekyll
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

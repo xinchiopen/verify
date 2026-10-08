@@ -1,0 +1,26 @@
+/**
+ * 存证链核验库：零 DOM 依赖，浏览器（安全上下文）与 Node 18+ 皆可运行。
+ * 真实证据包的核验只拼接节点原文重算 SHA-512，绝不重新序列化；pyjson / demo 仅用于现场生成演示链。
+ */
+export { ANCHOR_TIME_TOLERANCE_MS, compareAnchor, compareAnchorTime, compareSuccessorAnchor, parseFeishuMessage } from "./anchor"
+export { verifyConsistency } from "./consistency"
+export { buildExifSegment, encodeUserComment, insertExifSegment, parseUserComment } from "./exif"
+export type { ExifRecord } from "./exif"
+export { CHAIN_TIME_OFFSET_MS, chainTimeToEpochMs, FeishuApiError, fetchMessage, fetchTenantToken, messageToAnchorText } from "./feishu"
+export type { FeishuClientOptions, FeishuCredentials, FeishuMessage, FeishuToken } from "./feishu"
+export { countPdfPages, expectedQrTexts, verifyFileDigests, verifyImageExif, verifyReceipt } from "./files"
+export { wgs84ToGcj02 } from "./geo"
+export { hasWebCrypto, sha512Hex, sha512HexOfText, toHex, utf8 } from "./hash"
+export { buildNodeRaw, computeNodeSignature, verifyLinks, verifyNodeHash } from "./node"
+export type { NodeHashInput } from "./node"
+export { EvidencePackageFormatError, isEvidencePackage, PACKAGE_KIND, parseEvidencePackage, SUPPORTED_FORMAT_VERSION } from "./package"
+export type { PackageInput } from "./package"
+export { imageUuidFromPath, parseChainTime, parseNodePayload, shortHash } from "./payload"
+export { PyFloat, pyFloat, pyJsonDumps } from "./pyjson"
+export { buildReport, overallStatus, reportToJson, summarize } from "./report"
+export type * from "./types"
+export { nodesWithExternalSuccessor, successorMetaKey, VERIFY_STAGES, verifyAnchors, verifyEvidencePackage, verifyFiles, verifyNodes } from "./verify"
+export type { VerifyOptions, VerifyStage } from "./verify"
+export { VERIFIER_NAME, VERIFIER_VERSION } from "./version"
+export { buildWatermarkLines, buildWatermarkText } from "./watermark"
+export type { WatermarkInput } from "./watermark"

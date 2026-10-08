@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint, tests, builds & reference script
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm exec eslint .
+
+      - name: Vitest (verifier library, components, worker relay, golden evidence package)
+        run: pnpm test -- --run
+
+      - name: Build verification library
+        run: pnpm build:lib
+
+      - name: Build site (same base path as GitHub Pages)
+        run: pnpm build
+        env:
+          VITE_PUBLIC_PATH: /verify/
+
+      - name: Verify golden package with the Python reference script
+        run: python3 scripts/verify_evidence_package.py tests/fixtures/golden-evidence-package.zip
