@@ -7,7 +7,7 @@
 | `/`        | `pages/home/index.vue`             | 原理长文：哈希输入四段拼接的实时演示、存证链是什么 / 不是什么、证据包结构、四步入口、隐私声明、下载演示证据包                        |
 | `/steps/1` | `pages/steps/Step1Hash.vue`        | 节点哈希重算与链接；可编辑 `created_at` / `data` 看哈希变化                                                                          |
 | `/steps/2` | `pages/steps/Step2Files.vue`       | 证据原件摘要三方比对、EXIF 记录、回执预览；可用本地图片替换签单照                                                                    |
-| `/steps/3` | `pages/steps/Step3Consistency.vue` | 业务一致性规则表、运输段时间轴与离线轨迹草图；四个篡改按钮                                                                           |
+| `/steps/3` | `pages/steps/Step3Consistency.vue` | 业务一致性规则表、运输段时间轴与轨迹（有高德 key 时自动渲染地图，否则离线草图）；四个篡改按钮                                                                           |
 | `/steps/4` | `pages/steps/Step4Anchor.vue`      | 飞书消息粘贴比对                                                                                                                     |
 | `/verify`  | `pages/verify/index.vue`           | 上传证据包 → 盖章式结论 → 四步分区报告（第四步可粘贴每个节点的飞书消息，以及后继不在包内的节点的「后继节点消息」）→ 下载 JSON / 打印 |
 
@@ -15,7 +15,7 @@
 
 - `components/layout/`：`AppHeader`、`AppFooter`、`PaperCard`（卡片）、`StepLayout`（步骤导航 + 左说明右交互双栏 + 翻页）
 - `components/report/`：`FeishuConnect`（飞书凭证输入 / 连接 / 全部拉取）、`SealMark`（印章式结论，`status` pass/fail/warn/skip）、`CheckList` / `CheckItem`（检查项列表，可只看未通过）、`HashBlock`、`NodeCard`（四段输入 + 记录 / 重算哈希 + 链接）、`ImageEvidenceCard`（图 + EXIF 表 + 应印水印）、`PdfPreview`（`<object>` 预览 + 应有二维码文本）、`VoidedSection`、`ReportSummary`
-- `components/track/`：`legs.ts`（按运输段归并轨迹点）、`TrackSketch`（离线 SVG）、`LegTimeline`（时间窗 + 点分布）、`AmapTrack`（仅配置了 `VITE_AMAP_WEB_KEY` 时渲染，点击才加载 SDK）
+- `components/track/`：`legs.ts`（按运输段归并轨迹点）、`TrackSketch`（离线 SVG）、`LegTimeline`（时间窗 + 点分布）、`AmapTrack`（仅配置了 `VITE_AMAP_WEB_KEY` 时渲染，挂载即加载 SDK 并 emit `shown`：成功后页面给 `TrackSketch` 加 `print-only` 使草图只在打印时出现，失败则草图留在屏幕上并提供「重试」）
 - `components/common/`：`FileDrop`、`CodeTabs`（TS / Python 切换 + 复制）、`JsonEditor`、`Callout`
 - `components/diagram/`：`ChainDiagram`（三节点链接 SVG）、`PackageDiagram`（zip 结构）
 

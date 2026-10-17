@@ -235,6 +235,11 @@ textarea {
   resize: vertical;
 }
 
+/* 屏幕上隐藏、打印时显示（高德地图已渲染时的离线草图） */
+.print-only {
+  display: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

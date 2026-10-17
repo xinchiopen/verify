@@ -18,6 +18,7 @@ const { ensure, clonePackage, error } = useDemoChain()
 const pkg = shallowRef<EvidencePackage | null>(null)
 const checks = ref<Check[]>([])
 const applied = ref<string[]>([])
+const mapShown = ref(false)
 const legs = computed(() => pkg.value ? collectTrackLegs(pkg.value) : [])
 
 function rerun() {
@@ -101,8 +102,8 @@ async function restore() {
       <template v-else-if="pkg">
         <PaperCard title="运输段与轨迹" subtitle="第一段：司机甲（提货 → 接力）；第二段：司机乙（接力 → 送货）。">
           <LegTimeline :legs="legs" />
-          <TrackSketch :legs="legs" />
-          <AmapTrack :legs="legs" />
+          <AmapTrack :legs="legs" @shown="mapShown = $event" />
+          <TrackSketch :legs="legs" :class="{ 'print-only': mapShown }" />
         </PaperCard>
         <PaperCard title="篡改实验" subtitle="以下改动仅修改业务字段，用于观察第三步的检测能力；真实场景中这些改动同时会使第一步的哈希不一致。" class="no-print">
           <div class="experiments">

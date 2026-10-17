@@ -39,7 +39,7 @@ pnpm verify:py        # python3 scripts/verify_evidence_package.py tests/fixture
                       # 以及 --feishu-app-id/--feishu-app-secret（或环境变量）直连飞书拉取并核对发送时间；Python ≥ 3.8
 ```
 
-构建期变量（`.env` 已入库且公开，本地覆盖请写在被 git 忽略的 `.env.local`）：`VITE_AMAP_WEB_KEY` / `VITE_AMAP_SECURITY_JS_CODE`（填了才出现「在高德地图上查看」按钮，高德 key 不要提交进仓库）、`VITE_FEISHU_API_BASE`（飞书转发代理地址，见下节；空 = 同源 `/feishu-api`，开发期由 `vite.config.ts` 的 `server.proxy` 转发，自建站由 nginx 反代；GitHub Pages 构建由 CI 注入 Worker 地址；核验页「高级」里也可临时改为自己的代理）、`VITE_PUBLIC_PATH`（默认 `/`，Pages 镜像构建时为 `/verify/`）。除用户主动开启地图或填飞书凭证外，站点零外部请求。
+构建期变量（`.env` 已入库且公开，本地覆盖请写在被 git 忽略的 `.env.local`）：`VITE_AMAP_WEB_KEY` / `VITE_AMAP_SECURITY_JS_CODE`（填了则「运输段与轨迹」自动渲染高德地图、离线草图只在打印时出现，留空只画离线草图；高德 key 不要提交进仓库）、`VITE_FEISHU_API_BASE`（飞书转发代理地址，见下节；空 = 同源 `/feishu-api`，开发期由 `vite.config.ts` 的 `server.proxy` 转发，自建站由 nginx 反代；GitHub Pages 构建由 CI 注入 Worker 地址；核验页「高级」里也可临时改为自己的代理）、`VITE_PUBLIC_PATH`（默认 `/`，Pages 镜像构建时为 `/verify/`）。未配置高德 key 且不填飞书凭证时，站点零外部请求；配置了 key 的构建会在显示轨迹时自动向高德请求底图（页面上有说明）。
 
 ## 飞书转发代理（Feishu Relay Proxy）
 

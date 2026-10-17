@@ -25,6 +25,10 @@
     margin: 0;
   }
 
+  .print-only {
+    display: block !important;
+  }
+
   .paper-card,
   .check-item,
   .node-card,

@@ -28,6 +28,7 @@ const ANCHOR_PLACEHOLDER = "{ \"uuid\": \"...\", \"created_at\": \"...\", \"sign
 const { pkg, report, state, stageText, feishuMessages, successorFeishuMessages, fetchErrors, fetched, fetching, metaKey, fetchAnchor, fetchAllAnchors, checksByStep, run, rerunAnchors, reset } = useVerification()
 const { isConnected } = useFeishuConnection()
 const fetchingAll = ref(false)
+const mapShown = ref(false)
 const { ensure } = useDemoChain()
 
 const legs = computed(() => pkg.value ? collectTrackLegs(pkg.value) : [])
@@ -190,8 +191,8 @@ async function loadDemo() {
         <h2>第三步 · 业务一致性</h2>
         <PaperCard title="运输段与轨迹">
           <LegTimeline :legs="legs" />
-          <TrackSketch :legs="legs" :source="source" :target="target" />
-          <AmapTrack :legs="legs" :source="source" :target="target" />
+          <AmapTrack :legs="legs" :source="source" :target="target" @shown="mapShown = $event" />
+          <TrackSketch :legs="legs" :source="source" :target="target" :class="{ 'print-only': mapShown }" />
         </PaperCard>
         <CheckList :checks="checksByStep[3]" show-subject collapse-pass />
       </section>
