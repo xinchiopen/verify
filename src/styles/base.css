@@ -216,7 +216,8 @@ button:disabled {
 }
 
 textarea,
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
   font: inherit;
   font-size: 15px;
   width: 100%;
