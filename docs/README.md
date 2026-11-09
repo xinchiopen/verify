@@ -7,7 +7,7 @@
 | `/`        | `pages/home/index.vue`             | 原理长文：哈希输入四段拼接的实时演示、存证链是什么 / 不是什么、证据包结构、四步入口、隐私声明、下载演示证据包                        |
 | `/steps/1` | `pages/steps/Step1Hash.vue`        | 节点哈希重算与链接；可编辑 `created_at` / `data` 看哈希变化                                                                          |
 | `/steps/2` | `pages/steps/Step2Files.vue`       | 证据原件摘要三方比对、EXIF 记录、回执预览；可用本地图片替换签单照                                                                    |
-| `/steps/3` | `pages/steps/Step3Consistency.vue` | 业务一致性规则表、运输段时间轴与轨迹（有高德 key 时自动渲染地图，否则离线草图）；四个篡改按钮                                                                           |
+| `/steps/3` | `pages/steps/Step3Consistency.vue` | 业务一致性规则表、运输段时间轴与轨迹（有高德 key 时自动渲染地图，否则离线草图）；四个篡改按钮                                        |
 | `/steps/4` | `pages/steps/Step4Anchor.vue`      | 飞书消息粘贴比对                                                                                                                     |
 | `/verify`  | `pages/verify/index.vue`           | 上传证据包 → 盖章式结论 → 四步分区报告（第四步可粘贴每个节点的飞书消息，以及后继不在包内的节点的「后继节点消息」）→ 下载 JSON / 打印 |
 
@@ -27,7 +27,7 @@
 
 ## 核验库（`src/lib`）
 
-见根 README「核验库 API 速览」。模块：`types` / `hash` / `node` / `package` / `payload` / `files` / `exif` / `watermark` / `consistency` / `anchor` / `report` / `verify` / `geo` / `pyjson` / `demo/*` / `index`。`vite.lib.config.ts` 把 `src/lib/index.ts` 打成 ESM（`fflate` 外置），`tsconfig.lib.json` 出 d.ts。
+见根 README「核验库 API 速览」。模块：`types` / `hash` / `node` / `package` / `payload` / `files` / `exif` / `watermark` / `consistency` / `anchor` / `report` / `verify` / `geo` / `pyjson` / `demo/*` / `index`。`vite.lib.config.ts` 把 `src/lib/index.ts` 打成 ESM（`fflate` 外置），`tsconfig.lib.json` 出 d.ts。清单标 `withheld` 的文件（出具方按保密策略未提供原件）在 `files` 里记「跳过」——只核对清单摘要与链上摘要是否一致；`tests/withheld.test.ts` 用 `tests/helpers.ts::goldenWithheldZipBytes()` 从 golden 包现场生成变体，不另存夹具。
 
 ## 测试
 

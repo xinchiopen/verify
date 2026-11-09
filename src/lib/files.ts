@@ -4,6 +4,7 @@ import type { Check, EvidencePackage, ManifestFile, NodePayloadImage, PackageNod
  * - 每个文件：SHA-512 实算 vs manifest 声明（后台库内记录）vs 节点 data 内摘要（链上记录）三方一致；
  * - 签单图片：EXIF UserComment 记录（uuid / sn / raw_sha512，可含 latitude / longitude）与节点交叉比对；由记录重建的水印文字（三行，带坐标时四行）与链上 watermark_text 一致；
  * - 电子回执：PDF 页数与 page_count 一致，并列出每页二维码应有的文本 sn|页码|总页数 供目视。
+ * - 清单标 withheld 的文件（出具方按保密策略未提供原件）：只核对清单摘要与链上摘要是否一致，其余记「跳过」而非失败。
  */
 import { parseUserComment } from "./exif"
 import { sha512Hex } from "./hash"
@@ -31,12 +32,23 @@ function chainDigest(pkg: EvidencePackage, file: ManifestFile): string | undefin
 
 const KIND_TITLE: Record<ManifestFile["kind"], string> = { image: "签单图片摘要", signature: "手写签名摘要", receipt: "电子回执摘要" }
 
+export const WITHHELD_DETAIL = "出具方按保密策略未提供该文件原件，仅能核对链上摘要"
+
 export async function verifyFileDigests(pkg: EvidencePackage): Promise<Check[]> {
   const checks: Check[] = []
   for (const file of pkg.manifest.files) {
     const id = `file.sha512.${file.path}`
     const subject = { filePath: file.path, nodeUuid: file.node_uuid }
     const title = KIND_TITLE[file.kind] ?? "文件摘要"
+    if (file.withheld) {
+      const onChain = chainDigest(pkg, file)
+      if (onChain !== undefined && onChain !== file.sha512) {
+        checks.push({ id, step: 2, title, status: "fail", detail: `${WITHHELD_DETAIL}；清单（库内）摘要 ${shortHash(file.sha512)} 与链上 ${shortHash(onChain)} 不一致`, expected: onChain, actual: file.sha512, subject })
+      } else {
+        checks.push({ id, step: 2, title, status: "skip", detail: `${WITHHELD_DETAIL}${onChain === undefined ? "（节点未记录该文件摘要）" : `；清单（库内）摘要与链上一致 ${shortHash(onChain)}`}`, expected: file.sha512, subject })
+      }
+      continue
+    }
     if (file.missing) {
       checks.push({ id, step: 2, title, status: "fail", detail: "导出时对象存储中已找不到该文件，证据包内没有它的原件", expected: file.sha512, subject })
       continue
@@ -74,6 +86,11 @@ export function verifyImageExif(pkg: EvidencePackage): Check[] {
     const bytes = pkg.files.get(file.path)
     const record = bytes ? parseUserComment(bytes) : null
     const legacy = !image?.raw_sha512
+    if (file.withheld) {
+      checks.push({ id: exifId, step: 2, title: "图片 EXIF 记录", status: "skip", detail: `${WITHHELD_DETAIL}，无法读取 EXIF`, subject })
+      checks.push({ id: textId, step: 2, title: "水印文字", status: "skip", detail: `${WITHHELD_DETAIL}，无法重建水印文字`, subject })
+      continue
+    }
     if (!bytes) {
       checks.push({ id: exifId, step: 2, title: "图片 EXIF 记录", status: "skip", detail: "证据包内没有该文件，无法读取 EXIF", subject })
       checks.push({ id: textId, step: 2, title: "水印文字", status: "skip", detail: "证据包内没有该文件", subject })
@@ -137,6 +154,10 @@ export function verifyReceipt(pkg: EvidencePackage): Check[] {
     const node = nodeOf(pkg, file)
     const onChain = node ? parseNodePayload(node)?.receipt?.page_count : undefined
     const declared = file.page_count ?? onChain ?? null
+    if (file.withheld) {
+      checks.push({ id, step: 2, title: "电子回执页数", status: "skip", detail: WITHHELD_DETAIL, subject })
+      continue
+    }
     if (!bytes || declared === null) {
       checks.push({ id, step: 2, title: "电子回执页数", status: "skip", detail: bytes ? "清单与链上都没有页数记录" : "证据包内没有该文件", subject })
       continue

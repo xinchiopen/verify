@@ -27,6 +27,8 @@ export interface PackageInfo {
   exporter_version: string
   environment: string | null
   allow_missing: boolean
+  /** 出具方按保密策略整类扣留原件的文件种类（如 ["image"]）；旧证据包缺省 */
+  withheld_kinds?: string[]
 }
 
 export interface InstructionSummary {
@@ -109,6 +111,8 @@ export interface ManifestFile {
   longitude?: number | null
   page_count: number | null
   missing: boolean
+  /** 出具方按保密策略未提供原件：清单与链上摘要照常，包内没有该文件；与 missing 互斥。旧证据包缺省 */
+  withheld?: boolean
 }
 
 export interface PackageManifest {

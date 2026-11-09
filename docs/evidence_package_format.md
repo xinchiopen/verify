@@ -65,7 +65,8 @@ def verify_node(node: dict) -> bool:
     "exporter": "SiRouteServer export_evidence_package",
     "exporter_version": "1.0.0",
     "environment": "PROD",                          // PROD / TEST
-    "allow_missing": false                          // 导出时是否允许证据文件缺失
+    "allow_missing": false,                         // 导出时是否允许证据文件缺失
+    "withheld_kinds": []                            // 出具方按保密策略整类扣留原件的文件种类，如 ["image"]；2026-11-09 前导出的包没有此键
   },
   "instruction": {                                  // 运单摘要（白名单字段，不含联系人电话）
     "id": 1, "sn": "…", "shipping_sn": "…", "status": 5, "date_ship": "2026-04-14",
@@ -90,7 +91,7 @@ def verify_node(node: dict) -> bool:
     { "kind": "image", "uuid": "…", "path": "files/images/….jpg", "sha512": "…", "size": 1834211,
       "content_type": "image/jpeg", "storage_key": "carrier/images/….jpg", "node_uuid": "…", "order_id": 55,
       "raw_sha512": "…", "watermark_text": "申请单号 …\n上传时间 …\n图片编号 …\n经纬度 31.200000, 121.400000",
-      "latitude": 31.2, "longitude": 121.4, "page_count": null, "missing": false },
+      "latitude": 31.2, "longitude": 121.4, "page_count": null, "missing": false, "withheld": false },
     { "kind": "signature", "…": "…", "content_type": "image/png" },
     { "kind": "receipt",   "…": "…", "content_type": "application/pdf", "page_count": 2 }
   ],
@@ -111,6 +112,7 @@ def verify_node(node: dict) -> bool:
 | `files[].latitude` / `longitude` | 水印第四行的签单令牌经纬度（WGS-84，数值）；图片没有位置行时为 `null`，2026-10-08 前导出的证据包没有这两个键 |
 | `files[].storage_key` | 实际读取命中的对象存储路径（2026 年水印上线前的旧图可能是 `.jpeg`） |
 | `files[].missing` | `true` 表示导出时对象存储中已找不到该文件（仅 `--allow-missing` 时出现），包内没有该文件 |
+| `files[].withheld` | `true` 表示出具方按保密策略**未提供原件**（目前：对外接口导出、运输设备含 GPU 的运单扣留签单图片），包内没有该文件，但 `sha512` / `watermark_text` / 坐标等仍是库内记录，可与链上摘要比对；与 `missing` 互斥。`package.withheld_kinds` 列出被整类扣留的种类，`notes` 有人读说明。2026-11-09 前导出的包没有这两个键 |
 
 ## 5. `nodes/{uuid}.json`
 
@@ -160,7 +162,7 @@ SiRoute 的存证链是**全系统一条**，一张运单的节点之间通常�
 ## 9. 核验步骤（核验工具的实现顺序）
 
 1. **节点哈希与链接**：逐节点重算 `signature`；包内相邻节点满足 `node[n].prev_signature == node[n-1].signature`；后继不在包内时记「跳过」。
-2. **证据文件**：逐文件 SHA-512 与 `manifest.files[].sha512`、节点 `data` 内摘要三方一致；图片 EXIF 记录与节点交叉比对；回执页数与 `page_count` 一致（每页二维码内容为 `sn|页码|总页数`）。
+2. **证据文件**：逐文件 SHA-512 与 `manifest.files[].sha512`、节点 `data` 内摘要三方一致；图片 EXIF 记录与节点交叉比对；回执页数与 `page_count` 一致（每页二维码内容为 `sn|页码|总页数`）。清单标 `withheld` 的文件只核对清单摘要与链上摘要是否一致，其余检查记「跳过」而非失败。
 3. **业务一致性**：`event_type` / `order.signed_type` / `image_phase` 对应（提货 `driver_sign`/1/4、送货 `driver_sign`/2/5、接力 `driver_relay`/3/6）；有效签收单时间单调（提货 → 接力… → 送货）；回执只出现在送货节点；GPS 点落在所属运输段时间窗内；节点 `images[]` 与包内文件一一对应。
 4. **链外锚点**：把飞书群消息 `{uuid, created_at, signature, signature_prev}` 与节点比对；对后继不在包内的节点，可再粘贴**后继节点**的飞书消息，核对其 `signature_prev` 等于本节点哈希。核验方也可用自己的飞书自建应用凭证（机器人在存证群内、有消息读取权限）按 `feishu_msg_id` 直接拉取，并核对飞书记录的发送时间与 `created_at` 相差不超过 5 分钟。
 
@@ -170,5 +172,6 @@ SiRoute 的存证链是**全系统一条**，一张运单的节点之间通常�
 |---|---|---|
 | 1 | 2026-10-05 | 首版 |
 | 1 | 2026-10-05 | `legs[]` 增加 `start_order_id` / `end_order_id`；`next_node` 增加 `feishu_msg_id`（均为追加字段，版本不变） |
+| 1 | 2026-11-09 | `files[]` 增加 `withheld`，`package` 增加 `withheld_kinds`：出具方按保密策略扣留原件时清单与摘要保留、包内不放文件（追加字段，版本不变） |
 
 格式只增不改：新增字段不改版本号；语义变化才升级 `format_version`，核验工具按版本分支处理。

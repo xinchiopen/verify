@@ -35,6 +35,9 @@ const worst = computed(() => props.checks.some(check => check.status === "fail")
   <article class="image-card" :class="`image-card--${worst}`">
     <div class="image-card__media">
       <img v-if="objectUrl" :src="objectUrl" :alt="`签单图片 ${file.uuid}`">
+      <div v-else-if="file.withheld" class="image-card__missing small">
+        出具方按保密策略未提供图片原件，以下为清单 / 链上记录
+      </div>
       <div v-else class="image-card__missing small">
         证据包内没有该图片
       </div>
@@ -55,6 +58,9 @@ const worst = computed(() => props.checks.some(check => check.status === "fail")
               <div v-if="coordinates">
                 经纬度 <code>{{ coordinates.latitude }}, {{ coordinates.longitude }}</code> <span class="faint">（签单令牌位置，WGS-84）</span>
               </div>
+            </td>
+            <td v-else-if="file.withheld" class="muted">
+              未提供原件，无 EXIF 可读
             </td>
             <td v-else class="muted">
               未读到本系统写入的 EXIF 记录

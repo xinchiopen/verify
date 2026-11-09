@@ -182,12 +182,39 @@ def count_pdf_pages(pdf: bytes) -> int:
     return len(re.findall(rb'/Type\s*/Page(?![s\w])', pdf))
 
 
+def chain_image(payload: dict, entry: dict) -> dict | None:
+    return next((item for item in payload.get('images', []) if item.get('uuid') == entry['uuid']), None)
+
+
+def chain_digest(payload: dict, entry: dict):
+    if entry['kind'] == 'image':
+        image = chain_image(payload, entry)
+        return image.get('sha512') if image else None
+    if entry['kind'] == 'signature':
+        return (payload.get('signature') or {}).get('sha512')
+    return (payload.get('receipt') or {}).get('sha512')
+
+
 def verify_files(manifest: dict, nodes: list[dict], files: dict[str, bytes]) -> list[dict]:
     checks = []
     by_uuid = {node['uuid']: node for node in nodes}
     sn = manifest['instruction'].get('sn') or ''
     for entry in manifest['files']:
         check_id = f"file.sha512.{entry['path']}"
+        if entry.get('withheld'):
+            # 出具方按保密策略未提供原件：只核对清单摘要与链上摘要，其余记跳过
+            payload = payload_of(by_uuid[entry['node_uuid']]) if entry['node_uuid'] in by_uuid else None
+            on_chain = chain_digest(payload, entry) if payload else None
+            if on_chain is not None and on_chain != entry['sha512']:
+                checks.append(check(2, check_id, '文件摘要', 'fail', f'出具方按保密策略未提供原件，且清单摘要 {entry["sha512"][:16]}… 与链上 {on_chain[:16]}… 不一致'))
+            else:
+                checks.append(check(2, check_id, '文件摘要', 'skip', '出具方按保密策略未提供原件，仅能核对链上摘要' + ('（清单与链上一致）' if on_chain else '')))
+            if entry['kind'] == 'image':
+                checks.append(check(2, f"file.exif.{entry['uuid']}", '图片 EXIF 记录', 'skip', '未提供原件，无法读取 EXIF'))
+                checks.append(check(2, f"file.watermark_text.{entry['uuid']}", '水印文字', 'skip', '未提供原件，无法重建水印文字'))
+            elif entry['kind'] == 'receipt':
+                checks.append(check(2, f"file.receipt.page_count.{entry['uuid']}", '电子回执页数', 'skip', '未提供原件'))
+            continue
         if entry.get('missing'):
             checks.append(check(2, check_id, '文件摘要', 'fail', '导出时对象存储中已缺失'))
             continue
@@ -197,16 +224,8 @@ def verify_files(manifest: dict, nodes: list[dict], files: dict[str, bytes]) -> 
             continue
         actual = hashlib.sha512(data).hexdigest()
         payload = payload_of(by_uuid[entry['node_uuid']]) if entry['node_uuid'] in by_uuid else None
-        on_chain = None
-        image = None
-        if payload:
-            if entry['kind'] == 'image':
-                image = next((item for item in payload.get('images', []) if item.get('uuid') == entry['uuid']), None)
-                on_chain = image.get('sha512') if image else None
-            elif entry['kind'] == 'signature':
-                on_chain = (payload.get('signature') or {}).get('sha512')
-            else:
-                on_chain = (payload.get('receipt') or {}).get('sha512')
+        on_chain = chain_digest(payload, entry) if payload else None
+        image = chain_image(payload, entry) if payload else None
         if actual == entry['sha512'] and actual == on_chain:
             checks.append(check(2, check_id, '文件摘要', 'pass', '文件实算 / 清单 / 链上三方一致'))
         elif actual == entry['sha512'] and on_chain is None:
